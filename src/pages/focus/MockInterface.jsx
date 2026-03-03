@@ -163,10 +163,20 @@ const MockInterface = () => {
                 {/* Left Column (75%) - Question Area */}
                 <div className="w-full md:w-3/4 flex flex-col border-b md:border-b-0 md:border-r border-gray-200 md:overflow-y-auto">
                     <div className="flex-1 p-4 sm:p-8 md:p-12 max-w-4xl mx-auto w-full">
-                        <h2 className="text-2xl font-medium text-gray-900 mb-8 leading-snug">
-                            <span className="text-gray-400 mr-2">{currentIdx + 1}.</span>
-                            {question.text}
-                        </h2>
+                        <div className="flex justify-between items-start mb-8 gap-4">
+                            <h2 className="text-2xl font-medium text-gray-900 leading-snug">
+                                <span className="text-gray-400 mr-2">{currentIdx + 1}.</span>
+                                {question.text}
+                            </h2>
+                            <div className="flex flex-col items-end shrink-0 mt-1">
+                                <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-bold bg-green-50 text-green-700 border border-green-200">
+                                    +{question.positiveMarks ?? mock.positiveMarks} Marks
+                                </span>
+                                <span className="text-xs text-red-500 font-medium mt-1.5 px-1">
+                                    -{question.negativeMarks ?? mock.negativeMarks} for wrong
+                                </span>
+                            </div>
+                        </div>
 
                         <div className="space-y-4">
                             {question.options.map((opt, optIdx) => (

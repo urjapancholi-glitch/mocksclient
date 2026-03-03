@@ -24,7 +24,7 @@ const ResultSummary = () => {
         { name: 'Unanswered', value: result.unanswered, color: '#9CA3AF' }, // Gray
     ];
 
-    const maxScore = result.totalQuestions * result.positiveMarks;
+    const maxScore = result.totalMaxScore ?? (result.totalQuestions * result.positiveMarks);
     const percentage = maxScore > 0 ? ((result.score / maxScore) * 100).toFixed(1) : 0;
 
     return (
@@ -96,7 +96,7 @@ const ResultSummary = () => {
                                     <div>
                                         <div className="text-2xl font-bold text-green-700">{result.correct}</div>
                                         <div className="text-sm font-medium text-green-600">Correct</div>
-                                        <div className="text-xs text-green-500 mt-1">+{result.positiveMarks} points each</div>
+                                        <div className="text-xs text-green-500 mt-1">+{result.earnedPositivePoints ?? (result.correct * result.positiveMarks)} points earned</div>
                                     </div>
                                 </div>
 
@@ -105,7 +105,7 @@ const ResultSummary = () => {
                                     <div>
                                         <div className="text-2xl font-bold text-red-700">{result.incorrect}</div>
                                         <div className="text-sm font-medium text-red-600">Incorrect</div>
-                                        <div className="text-xs text-red-500 mt-1">-{result.negativeMarks} points each</div>
+                                        <div className="text-xs text-red-500 mt-1">-{result.lostNegativePoints ?? (result.incorrect * result.negativeMarks)} points deducted</div>
                                     </div>
                                 </div>
 
@@ -145,11 +145,17 @@ const ResultSummary = () => {
                                             </div>
                                             <div className="flex-none">
                                                 {isCorrect ? (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Correct</span>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Correct</span>
+                                                        <span className="text-xs text-green-600 font-bold mt-1">+{q.positiveMarks ?? result.positiveMarks}</span>
+                                                    </div>
                                                 ) : isUnanswered ? (
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Unanswered</span>
                                                 ) : (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Incorrect</span>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Incorrect</span>
+                                                        <span className="text-xs text-red-600 font-bold mt-1">-{q.negativeMarks ?? result.negativeMarks}</span>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>

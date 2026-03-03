@@ -27,7 +27,9 @@ const AdminPanel = () => {
         text: '',
         options: ['', '', '', ''],
         correctOptionIndex: 0,
-        explanation: ''
+        explanation: '',
+        positiveMarks: '',
+        negativeMarks: ''
     });
 
     useEffect(() => {
@@ -79,9 +81,13 @@ const AdminPanel = () => {
             return;
         }
 
+        const questionToAdd = { ...newQuestion };
+        if (questionToAdd.positiveMarks === '') delete questionToAdd.positiveMarks;
+        if (questionToAdd.negativeMarks === '') delete questionToAdd.negativeMarks;
+
         setNewMock(prev => ({
             ...prev,
-            questions: [...prev.questions, { ...newQuestion }]
+            questions: [...prev.questions, questionToAdd]
         }));
 
         // Reset question form
@@ -89,7 +95,9 @@ const AdminPanel = () => {
             text: '',
             options: ['', '', '', ''],
             correctOptionIndex: 0,
-            explanation: ''
+            explanation: '',
+            positiveMarks: '',
+            negativeMarks: ''
         });
     };
 
@@ -348,20 +356,22 @@ const AdminPanel = () => {
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-sm font-medium text-gray-700">Positive Marks</label>
+                                                <label className="text-xs font-medium text-gray-700">Default Positive Marks</label>
                                                 <input
                                                     type="number"
+                                                    step="any"
                                                     value={newMock.positiveMarks}
-                                                    onChange={e => setNewMock({ ...newMock, positiveMarks: parseInt(e.target.value) || 0 })}
+                                                    onChange={e => setNewMock({ ...newMock, positiveMarks: e.target.value === '' ? 0 : Number(e.target.value) })}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 outline-none text-sm text-green-700"
                                                 />
                                             </div>
                                             <div className="space-y-1 col-start-2">
-                                                <label className="text-sm font-medium text-gray-700">Negative Marks</label>
+                                                <label className="text-xs font-medium text-gray-700">Default Negative Marks</label>
                                                 <input
                                                     type="number"
+                                                    step="any"
                                                     value={newMock.negativeMarks}
-                                                    onChange={e => setNewMock({ ...newMock, negativeMarks: parseInt(e.target.value) || 0 })}
+                                                    onChange={e => setNewMock({ ...newMock, negativeMarks: e.target.value === '' ? 0 : Number(e.target.value) })}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 outline-none text-sm text-red-700"
                                                 />
                                             </div>
@@ -431,6 +441,31 @@ const AdminPanel = () => {
                                                 rows="2"
                                             />
 
+                                            <div className="grid grid-cols-2 gap-3 mt-2">
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-medium text-gray-700">Specific Positive Marks (Optional)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="any"
+                                                        value={newQuestion.positiveMarks}
+                                                        onChange={e => setNewQuestion({ ...newQuestion, positiveMarks: e.target.value === '' ? '' : Number(e.target.value) })}
+                                                        placeholder={`Default: ${newMock.positiveMarks}`}
+                                                        className="w-full px-3 py-2 border rounded-md outline-none text-sm border-gray-300 focus:border-green-500"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-medium text-gray-700">Specific Negative Marks (Optional)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="any"
+                                                        value={newQuestion.negativeMarks}
+                                                        onChange={e => setNewQuestion({ ...newQuestion, negativeMarks: e.target.value === '' ? '' : Number(e.target.value) })}
+                                                        placeholder={`Default: ${newMock.negativeMarks}`}
+                                                        className="w-full px-3 py-2 border rounded-md outline-none text-sm border-gray-300 focus:border-red-500"
+                                                    />
+                                                </div>
+                                            </div>
+
                                             <button
                                                 onClick={handleAddQuestion}
                                                 className="w-full py-2 bg-white border border-action-blue text-action-blue font-medium rounded-lg text-sm hover:bg-blue-100 transition-colors"
@@ -462,6 +497,12 @@ const AdminPanel = () => {
                                                             <span className="font-semibold">Explanation:</span> {q.explanation}
                                                         </div>
                                                     )}
+                                                    <div className="mt-2 text-xs flex gap-3 text-gray-500">
+                                                        <span><span className="font-semibold">Marks:</span> +{q.positiveMarks ?? newMock.positiveMarks} / -{q.negativeMarks ?? newMock.negativeMarks}</span>
+                                                        {(q.positiveMarks !== undefined || q.negativeMarks !== undefined) && (
+                                                            <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Custom Marking</span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ))}
                                             {newMock.questions.length === 0 && (
