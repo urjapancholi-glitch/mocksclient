@@ -123,6 +123,81 @@ const ResultSummary = () => {
                     </div>
                 </div>
 
+                {/* Detailed Results Section */}
+                {result.detailedResults && result.detailedResults.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mt-8">
+                        <div className="p-6 md:p-10 border-b border-gray-100 bg-gray-50">
+                            <h2 className="text-2xl font-bold text-gray-800">Detailed Analysis</h2>
+                            <p className="text-gray-500 mt-1">Review your answers and learn from the explanations.</p>
+                        </div>
+
+                        <div className="divide-y divide-gray-100">
+                            {result.detailedResults.map((q, idx) => {
+                                const isCorrect = q.userSelectedOption === q.correctOptionIndex;
+                                const isUnanswered = q.userSelectedOption === null;
+
+                                return (
+                                    <div key={idx} className="p-6 md:p-10">
+                                        <div className="flex items-start gap-3 mb-4">
+                                            <span className="font-bold text-gray-400 min-w-8">Q{idx + 1}.</span>
+                                            <div className="text-gray-900 font-medium text-lg flex-1">
+                                                {q.questionText}
+                                            </div>
+                                            <div className="flex-none">
+                                                {isCorrect ? (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Correct</span>
+                                                ) : isUnanswered ? (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Unanswered</span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Incorrect</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="pl-11 pr-4 space-y-3">
+                                            {q.options.map((opt, optIdx) => {
+                                                const isUserChoice = q.userSelectedOption === optIdx;
+                                                const isCorrectOption = q.correctOptionIndex === optIdx;
+
+                                                let style = "border-gray-200 bg-white text-gray-700";
+                                                let icon = null;
+
+                                                if (isCorrectOption) {
+                                                    style = "border-green-500 bg-green-50 text-green-900 font-medium";
+                                                    icon = <CheckCircle className="h-5 w-5 text-green-500 flex-none bg-white rounded-full" />;
+                                                } else if (isUserChoice && !isCorrectOption) {
+                                                    style = "border-red-300 bg-red-50 text-red-800";
+                                                    icon = <XCircle className="h-5 w-5 text-red-500 flex-none bg-white rounded-full" />;
+                                                }
+
+                                                return (
+                                                    <div key={optIdx} className={`p-4 border rounded-xl flex items-center justify-between ${style}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-6 w-6 rounded-full border border-current flex items-center justify-center text-xs opacity-50">
+                                                                {String.fromCharCode(65 + optIdx)}
+                                                            </div>
+                                                            <span>{opt}</span>
+                                                        </div>
+                                                        {icon && <span>{icon}</span>}
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Explanation block */}
+                                            {q.explanation && (
+                                                <div className="mt-6 p-5 bg-blue-50 border border-blue-100 rounded-xl text-sm">
+                                                    <span className="font-bold text-action-blue uppercase tracking-wider text-xs mb-2 block">Explanation</span>
+                                                    <p className="text-gray-800">{q.explanation}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
             </div>
         </div>
     );

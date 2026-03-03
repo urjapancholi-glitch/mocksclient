@@ -26,7 +26,8 @@ const AdminPanel = () => {
     const [newQuestion, setNewQuestion] = useState({
         text: '',
         options: ['', '', '', ''],
-        correctOptionIndex: 0
+        correctOptionIndex: 0,
+        explanation: ''
     });
 
     useEffect(() => {
@@ -80,14 +81,15 @@ const AdminPanel = () => {
 
         setNewMock(prev => ({
             ...prev,
-            questions: [...prev.questions, newQuestion]
+            questions: [...prev.questions, { ...newQuestion }]
         }));
 
         // Reset question form
         setNewQuestion({
             text: '',
             options: ['', '', '', ''],
-            correctOptionIndex: 0
+            correctOptionIndex: 0,
+            explanation: ''
         });
     };
 
@@ -421,6 +423,14 @@ const AdminPanel = () => {
                                                 ))}
                                             </div>
 
+                                            <textarea
+                                                value={newQuestion.explanation || ''}
+                                                onChange={e => setNewQuestion({ ...newQuestion, explanation: e.target.value })}
+                                                className="w-full px-3 py-2 mt-2 border border-blue-200 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm resize-y"
+                                                placeholder="Explanation / Rationale for correct answer (shown after test ends)..."
+                                                rows="2"
+                                            />
+
                                             <button
                                                 onClick={handleAddQuestion}
                                                 className="w-full py-2 bg-white border border-action-blue text-action-blue font-medium rounded-lg text-sm hover:bg-blue-100 transition-colors"
@@ -447,6 +457,11 @@ const AdminPanel = () => {
                                                             </div>
                                                         ))}
                                                     </div>
+                                                    {q.explanation && (
+                                                        <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded text-sm text-gray-700">
+                                                            <span className="font-semibold">Explanation:</span> {q.explanation}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                             {newMock.questions.length === 0 && (

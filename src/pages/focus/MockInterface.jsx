@@ -15,11 +15,6 @@ const MockInterface = () => {
     const [flagged, setFlagged] = useState({}); // { questionIndex: boolean }
     const [currentIdx, setCurrentIdx] = useState(0);
     const [submitting, setSubmitting] = useState(false);
-    const [showWrongFeedback, setShowWrongFeedback] = useState(false);
-
-    useEffect(() => {
-        setShowWrongFeedback(false);
-    }, [currentIdx]);
 
     useEffect(() => {
         // Add scroll lock for Focus Mode
@@ -192,7 +187,7 @@ const MockInterface = () => {
                                                 name={`question-${currentIdx}`}
                                                 checked={answers[currentIdx] === optIdx}
                                                 onChange={() => {
-                                                    if (!showWrongFeedback) setAnswers(prev => ({ ...prev, [currentIdx]: optIdx }));
+                                                    setAnswers(prev => ({ ...prev, [currentIdx]: optIdx }));
                                                 }}
                                                 className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
                                             />
@@ -206,18 +201,7 @@ const MockInterface = () => {
                                 </label>
                             ))}
                         </div>
-
-                        {/* Wrong Feedback */}
-                        {showWrongFeedback && typeof question.correctOptionIndex === 'number' && (
-                            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 animate-[fadeIn_0.3s_ease-out]">
-                                <p className="font-semibold mb-1 flex items-center">
-                                    <span className="mr-2">❌</span> Incorrect
-                                </p>
-                                <p className="text-sm">The correct answer is: <span className="font-bold text-red-900">{question.options[question.correctOptionIndex]}</span></p>
-                            </div>
-                        )}
                     </div>
-
                     {/* Fixed Footer within Question Area */}
                     <div className="flex-none bg-gray-50 border-t border-gray-200 p-4 px-4 sm:px-8 flex flex-wrap gap-4 sm:gap-0 justify-between items-center">
                         <div className="flex space-x-2 sm:space-x-4">
@@ -244,32 +228,20 @@ const MockInterface = () => {
 
                         {currentIdx < mock.questions.length - 1 ? (
                             <button
-                                onClick={() => {
-                                    if (answers[currentIdx] !== undefined && !showWrongFeedback && answers[currentIdx] !== question.correctOptionIndex) {
-                                        setShowWrongFeedback(true);
-                                    } else {
-                                        setCurrentIdx(p => Math.min(mock.questions.length - 1, p + 1));
-                                    }
-                                }}
+                                onClick={() => setCurrentIdx(p => Math.min(mock.questions.length - 1, p + 1))}
                                 className="flex items-center px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-action-blue hover:bg-action-blue-hover focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                             >
-                                {showWrongFeedback ? 'Continue' : 'Next'}
+                                Next
                                 <ChevronRight className="h-4 w-4 ml-1" />
                             </button>
                         ) : (
                             <button
-                                onClick={() => {
-                                    if (answers[currentIdx] !== undefined && !showWrongFeedback && answers[currentIdx] !== question.correctOptionIndex) {
-                                        setShowWrongFeedback(true);
-                                    } else {
-                                        submitTest();
-                                    }
-                                }}
+                                onClick={submitTest}
                                 disabled={submitting}
                                 className="flex items-center px-8 py-2 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                             >
                                 {submitting ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : <CheckCircle className="h-5 w-5 mr-2" />}
-                                {showWrongFeedback ? 'Proceed to Submit' : 'Submit Exam'}
+                                Submit Exam
                             </button>
                         )}
                     </div>
