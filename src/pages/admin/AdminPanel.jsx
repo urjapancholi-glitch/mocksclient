@@ -2,10 +2,18 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { FileText, Loader2, Plus, Edit2, Trash2, ArrowLeft, CheckCircle, Users } from 'lucide-react';
 
+import { FolderTree } from 'lucide-react';
+
 const AdminPanel = () => {
     const [activeTab, setActiveTab] = useState('mocks');
     const [mocks, setMocks] = useState([]);
     const [loadingMocks, setLoadingMocks] = useState(false);
+
+    // Categories State
+    const [categories, setCategories] = useState([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
+    const [showCreateCategory, setShowCreateCategory] = useState(false);
+    const [newCategory, setNewCategory] = useState({ name: '', type: 'Main', parentId: '' });
 
     // User State
     const [users, setUsers] = useState([]);
@@ -20,6 +28,9 @@ const AdminPanel = () => {
         durationMinutes: 60,
         positiveMarks: 4,
         negativeMarks: 1,
+        category: '',
+        subCategory: '',
+        instructions: [''],
         questions: []
     });
 
@@ -35,6 +46,7 @@ const AdminPanel = () => {
     useEffect(() => {
         if (activeTab === 'mocks' && !showCreate) fetchMocks();
         if (activeTab === 'users') fetchUsers();
+        if (activeTab === 'folders' || showCreate) fetchCategories();
     }, [activeTab, showCreate]);
 
     const fetchMocks = async () => {
@@ -63,6 +75,56 @@ const AdminPanel = () => {
         } finally {
             setLoadingUsers(false);
         }
+    };
+
+    const fetchCategories = async () => {
+        setLoadingCategories(true);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/categories`);
+            if (res.ok) {
+                setCategories(await res.json());
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingCategories(false);
+        }
+    };
+
+    const handleSaveCategory = async () => {
+        if (!newCategory.name) return alert('Name is required');
+        try {
+            const url = newCategory._id
+                ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/categories/admin/${newCategory._id}`
+                : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/categories/admin`;
+            const method = newCategory._id ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newCategory)
+            });
+
+            if (res.ok) {
+                setShowCreateCategory(false);
+                setNewCategory({ name: '', type: 'Main', parentId: '' });
+                fetchCategories();
+            } else {
+                alert('Failed to save category');
+            }
+        } catch (err) {
+            alert('Server error saving category');
+        }
+    };
+
+    const deleteCategory = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this folder?')) return;
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/categories/admin/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setCategories(categories.filter(c => c._id !== id));
+            }
+        } catch (err) { }
     };
 
     const deleteMock = async (id) => {
@@ -141,6 +203,9 @@ const AdminPanel = () => {
                     durationMinutes: 60,
                     positiveMarks: 4,
                     negativeMarks: 1,
+                    category: '',
+                    subCategory: '',
+                    instructions: [''],
                     questions: []
                 });
                 fetchMocks();
@@ -178,6 +243,13 @@ const AdminPanel = () => {
                     >
                         <Users className="mr-3 h-5 w-5" />
                         Manage Users
+                    </button>
+                    <button
+                        onClick={() => { setActiveTab('folders'); setShowCreate(false); setShowCreateCategory(false); }}
+                        className={`md:w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'folders' ? 'bg-blue-50 text-action-blue' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <FolderTree className="mr-3 h-5 w-5" />
+                        Manage Folders
                     </button>
                 </nav>
             </div>
@@ -238,6 +310,138 @@ const AdminPanel = () => {
                         </div>
                     )}
 
+                    {/* View: Categories List */}
+                    {activeTab === 'folders' && !showCreateCategory && (
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-center gap-4">
+                                <h1 className="text-2xl font-bold text-gray-900">Manage Folders</h1>
+                                <button
+                                    onClick={() => {
+                                        setNewCategory({ name: '', type: 'Main', parentId: '' });
+                                        setShowCreateCategory(true);
+                                    }}
+                                    className="flex items-center px-4 py-2 bg-action-blue text-white rounded-lg text-sm font-medium hover:bg-action-blue-hover transition-colors"
+                                >
+                                    <Plus className="mr-2 h-4 w-4" /> Add Folder
+                                </button>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                {loadingCategories ? (
+                                    <div className="p-12 flex justify-center"><Loader2 className="animate-spin h-8 w-8 text-gray-400" /></div>
+                                ) : categories.length === 0 ? (
+                                    <div className="p-12 text-center text-gray-500">No folders configured. Create one to get started.</div>
+                                ) : (
+                                    <div className="p-6 space-y-6">
+                                        {categories.filter(c => c.type === 'Main').map(main => (
+                                            <div key={main._id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <h3 className="font-bold text-lg text-gray-800 flex items-center">
+                                                        <FolderTree className="h-5 w-5 mr-2 text-action-blue" />
+                                                        {main.name}
+                                                    </h3>
+                                                    <div className="space-x-4">
+                                                        <button
+                                                            onClick={() => {
+                                                                setNewCategory({ ...main });
+                                                                setShowCreateCategory(true);
+                                                            }}
+                                                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                                                        ><Edit2 className="h-4 w-4 inline" /></button>
+                                                        <button onClick={() => deleteCategory(main._id)} className="text-red-600 hover:text-red-900 transition-colors"><Trash2 className="h-4 w-4 inline" /></button>
+                                                    </div>
+                                                </div>
+                                                <div className="pl-6 space-y-2">
+                                                    {categories.filter(sub => sub.type === 'Sub' && sub.parentId === main._id).map(sub => (
+                                                        <div key={sub._id} className="flex justify-between items-center p-3 bg-white border border-gray-100 rounded-md">
+                                                            <span className="font-medium text-gray-700">{sub.name}</span>
+                                                            <div className="space-x-4">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setNewCategory({ ...sub });
+                                                                        setShowCreateCategory(true);
+                                                                    }}
+                                                                    className="text-blue-600 hover:text-blue-900 transition-colors"
+                                                                ><Edit2 className="h-4 w-4 inline" /></button>
+                                                                <button onClick={() => deleteCategory(sub._id)} className="text-red-600 hover:text-red-900 transition-colors"><Trash2 className="h-4 w-4 inline" /></button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {categories.filter(sub => sub.type === 'Sub' && sub.parentId === main._id).length === 0 && (
+                                                        <div className="text-sm text-gray-400 italic py-2">No subfolders added yet.</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* View: Create Category Form */}
+                    {activeTab === 'folders' && showCreateCategory && (
+                        <div className="space-y-6">
+                            <div className="flex items-center space-x-4">
+                                <button
+                                    onClick={() => setShowCreateCategory(false)}
+                                    className="p-2 rounded-full hover:bg-gray-200 text-gray-600 transition-colors"
+                                >
+                                    <ArrowLeft className="h-5 w-5" />
+                                </button>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900">{newCategory._id ? 'Edit Folder' : 'Create New Folder'}</h1>
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 max-w-xl">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">Folder Name</label>
+                                    <input
+                                        type="text"
+                                        value={newCategory.name}
+                                        onChange={e => setNewCategory({ ...newCategory, name: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
+                                        placeholder="e.g. JAIIB Exam 2026"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">Folder Level</label>
+                                    <select
+                                        value={newCategory.type}
+                                        onChange={e => setNewCategory({ ...newCategory, type: e.target.value, parentId: e.target.value === 'Main' ? '' : newCategory.parentId })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
+                                    >
+                                        <option value="Main">Main Folder</option>
+                                        <option value="Sub">Sub Folder</option>
+                                    </select>
+                                </div>
+                                {newCategory.type === 'Sub' && (
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-medium text-gray-700">Parent Main Folder</label>
+                                        <select
+                                            value={newCategory.parentId}
+                                            onChange={e => setNewCategory({ ...newCategory, parentId: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
+                                        >
+                                            <option value="">Select Parent Folder</option>
+                                            {categories.filter(c => c.type === 'Main').map(c => (
+                                                <option key={c._id} value={c._id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                <button
+                                    onClick={handleSaveCategory}
+                                    disabled={!newCategory.name || (newCategory.type === 'Sub' && !newCategory.parentId)}
+                                    className="w-full mt-4 flex justify-center items-center py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm transition-colors disabled:opacity-50"
+                                >
+                                    <CheckCircle className="h-5 w-5 mr-2" />
+                                    {newCategory._id ? 'Update Folder' : 'Save Folder'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* View: Mock Tests List */}
                     {activeTab === 'mocks' && !showCreate && (
                         <div className="space-y-6">
@@ -251,6 +455,9 @@ const AdminPanel = () => {
                                             durationMinutes: 60,
                                             positiveMarks: 4,
                                             negativeMarks: 1,
+                                            category: '',
+                                            subCategory: '',
+                                            instructions: [''],
                                             questions: []
                                         });
                                         setShowCreate(true);
@@ -342,6 +549,72 @@ const AdminPanel = () => {
                                                 rows="3"
                                                 placeholder="Brief description of the exam syllabus..."
                                             />
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-sm font-medium text-gray-700">Main Folder</label>
+                                            <select
+                                                value={newMock.category}
+                                                onChange={e => setNewMock({ ...newMock, category: e.target.value, subCategory: '' })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
+                                            >
+                                                <option value="">Select Main Folder</option>
+                                                {categories.filter(c => c.type === 'Main').map(c => (
+                                                    <option key={c._id} value={c._id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-sm font-medium text-gray-700">Sub Folder</label>
+                                            <select
+                                                value={newMock.subCategory}
+                                                onChange={e => setNewMock({ ...newMock, subCategory: e.target.value })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
+                                                disabled={!newMock.category}
+                                            >
+                                                <option value="">Select Sub Folder</option>
+                                                {categories.filter(c => c.type === 'Sub' && c.parentId === newMock.category).map(c => (
+                                                    <option key={c._id} value={c._id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-gray-700 flex justify-between">
+                                                Instructions
+                                                <button
+                                                    onClick={() => setNewMock({ ...newMock, instructions: [...(newMock.instructions || []), ''] })}
+                                                    className="text-action-blue hover:text-blue-800 text-xs flex items-center"
+                                                >
+                                                    <Plus className="h-3 w-3 mr-1" /> Add Rule
+                                                </button>
+                                            </label>
+                                            {(newMock.instructions || []).map((inst, idx) => (
+                                                <div key={idx} className="flex gap-2 mb-2">
+                                                    <input
+                                                        type="text"
+                                                        value={inst}
+                                                        onChange={e => {
+                                                            const upd = [...newMock.instructions];
+                                                            upd[idx] = e.target.value;
+                                                            setNewMock({ ...newMock, instructions: upd });
+                                                        }}
+                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
+                                                        placeholder={`Instruction point ${idx + 1}`}
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const upd = [...newMock.instructions];
+                                                            upd.splice(idx, 1);
+                                                            setNewMock({ ...newMock, instructions: upd });
+                                                        }}
+                                                        className="text-red-500 hover:bg-red-50 p-2 rounded-lg"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">

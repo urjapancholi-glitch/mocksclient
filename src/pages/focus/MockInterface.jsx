@@ -15,6 +15,7 @@ const MockInterface = () => {
     const [flagged, setFlagged] = useState({}); // { questionIndex: boolean }
     const [currentIdx, setCurrentIdx] = useState(0);
     const [submitting, setSubmitting] = useState(false);
+    const [hasStarted, setHasStarted] = useState(false);
 
     useEffect(() => {
         // Add scroll lock for Focus Mode
@@ -42,7 +43,7 @@ const MockInterface = () => {
 
     // Timer logic
     useEffect(() => {
-        if (loading || timeLeft <= 0 || submitting) return;
+        if (loading || timeLeft <= 0 || submitting || !hasStarted) return;
 
         const timerId = setInterval(() => {
             setTimeLeft(prev => {
@@ -56,7 +57,7 @@ const MockInterface = () => {
         }, 1000);
 
         return () => clearInterval(timerId);
-    }, [loading, timeLeft, submitting]);
+    }, [loading, timeLeft, submitting, hasStarted]);
 
     const handleAutoSubmit = useCallback(async () => {
         // Wrapper for interval closure
@@ -122,6 +123,96 @@ const MockInterface = () => {
             <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
                 <h2 className="text-xl font-semibold text-gray-700">No questions available for this test.</h2>
                 <button onClick={() => navigate('/')} className="mt-4 text-action-blue hover:underline">Return to Dashboard</button>
+            </div>
+        );
+    }
+
+    if (!hasStarted) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col md:overflow-hidden">
+                <header className="flex-none bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex justify-center items-center shadow-sm">
+                    <img src="/logo.png" alt="Logo" className="h-8 w-auto object-contain mr-3" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
+                    <span className="text-xl font-bold text-gray-800 tracking-wider">knowwithhits</span>
+                </header>
+
+                <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+                    <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-200 max-w-3xl w-full">
+                        <div className="text-center mb-8">
+                            <span className="inline-block py-1 px-3 rounded-full bg-blue-50 text-action-blue text-xs font-bold uppercase tracking-wider mb-3">Pre-Test Instructions</span>
+                            <h1 className="text-3xl font-bold text-gray-900 leading-tight">{mock.title}</h1>
+                            <p className="text-gray-500 mt-2">{mock.description}</p>
+                        </div>
+
+                        <div className="space-y-6 text-gray-700">
+                            {mock.instructions && mock.instructions.filter(i => i.trim() !== '').length > 0 ? (
+                                <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                                        <Flag className="h-5 w-5 mr-2 text-action-blue" /> Specific Exam Instructions
+                                    </h3>
+                                    <ul className="list-disc pl-5 space-y-3">
+                                        {mock.instructions.filter(i => i.trim() !== '').map((inst, idx) => (
+                                            <li key={idx} className="pl-1 leading-relaxed">{inst}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : (
+                                <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 flex items-center text-gray-500">
+                                    <Flag className="h-5 w-5 mr-3 text-gray-400" />
+                                    <p>No specific instructions provided for this exam. Please review the universal rules below.</p>
+                                </div>
+                            )}
+
+                            <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100">
+                                <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center">
+                                    <AlertCircle className="h-5 w-5 mr-2 text-blue-600" /> Universal Exam Rules
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="bg-white p-4 rounded-lg border border-blue-50 shadow-sm flex items-start">
+                                        <div className="bg-blue-100 p-2 rounded-md mr-3 text-action-blue"><Clock className="h-4 w-4" /></div>
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase font-semibold">Duration</p>
+                                            <p className="font-bold text-gray-900">{mock.durationMinutes} Minutes</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-lg border border-blue-50 shadow-sm flex items-start">
+                                        <div className="bg-blue-100 p-2 rounded-md mr-3 text-action-blue"><CheckCircle className="h-4 w-4" /></div>
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase font-semibold">Total Questions</p>
+                                            <p className="font-bold text-gray-900">{mock.questions.length} Questions</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-lg border border-blue-50 shadow-sm flex items-start">
+                                        <div className="bg-green-100 p-2 rounded-md mr-3 text-green-600">+</div>
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase font-semibold">Correct Answer</p>
+                                            <p className="font-bold text-green-700">+{mock.positiveMarks} Marks</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-lg border border-red-50 shadow-sm flex items-start">
+                                        <div className="bg-red-100 p-2 rounded-md mr-3 text-red-600">-</div>
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase font-semibold">Incorrect Answer</p>
+                                            <p className="font-bold text-red-700">-{mock.negativeMarks} Marks</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p className="text-sm text-blue-800 mt-4 px-2">
+                                    <strong>Note:</strong> The timer begins immediately after you click the button below. Do not refresh the page during the exam.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 pt-6 border-t border-gray-100">
+                            <button
+                                onClick={() => setHasStarted(true)}
+                                className="w-full flex justify-center items-center py-4 px-4 bg-action-blue hover:bg-action-blue-hover text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 text-lg"
+                            >
+                                <PlayCircle className="h-6 w-6 mr-2" />
+                                I am ready, Start Exam
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
