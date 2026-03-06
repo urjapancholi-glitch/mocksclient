@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Clock, ChevronLeft, ChevronRight, Flag, CheckCircle, Loader2 } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Flag, CheckCircle, Loader2, AlertCircle, PlayCircle } from 'lucide-react';
 
 const MockInterface = () => {
     const { id } = useParams();
@@ -18,10 +18,12 @@ const MockInterface = () => {
     const [hasStarted, setHasStarted] = useState(false);
 
     useEffect(() => {
-        // Add scroll lock for Focus Mode
-        document.body.classList.add('focus-mode-scroll-lock');
-        return () => document.body.classList.remove('focus-mode-scroll-lock');
-    }, []);
+        // Add scroll lock for Focus Mode only when the test has started
+        if (hasStarted) {
+            document.body.classList.add('focus-mode-scroll-lock');
+            return () => document.body.classList.remove('focus-mode-scroll-lock');
+        }
+    }, [hasStarted]);
 
     useEffect(() => {
         const fetchMock = async () => {
@@ -129,14 +131,14 @@ const MockInterface = () => {
 
     if (!hasStarted) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col md:overflow-hidden">
+            <div className="min-h-screen bg-gray-50 flex flex-col">
                 <header className="flex-none bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex justify-center items-center shadow-sm">
                     <img src="/logo.png" alt="Logo" className="h-8 w-auto object-contain mr-3" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
                     <span className="text-xl font-bold text-gray-800 tracking-wider">knowwithhits</span>
                 </header>
 
-                <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
-                    <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-200 max-w-3xl w-full">
+                <div className="flex-1 flex flex-col items-center p-4 sm:p-8 overflow-y-auto">
+                    <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-200 max-w-3xl w-full my-auto mt-8 mb-8">
                         <div className="text-center mb-8">
                             <span className="inline-block py-1 px-3 rounded-full bg-blue-50 text-action-blue text-xs font-bold uppercase tracking-wider mb-3">Pre-Test Instructions</span>
                             <h1 className="text-3xl font-bold text-gray-900 leading-tight">{mock.title}</h1>
