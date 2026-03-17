@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { FileText, Loader2, Plus, Edit2, Trash2, ArrowLeft, CheckCircle, Users } from 'lucide-react';
-
-import { FolderTree } from 'lucide-react';
+import { FileText, Loader2, Plus, Edit2, Trash2, ArrowLeft, CheckCircle, Users, Link as LinkIcon, FolderTree } from 'lucide-react';
 
 const AdminPanel = () => {
     const [activeTab, setActiveTab] = useState('mocks');
@@ -18,6 +16,12 @@ const AdminPanel = () => {
     // User State
     const [users, setUsers] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
+
+    // Important Questions State
+    const [importantQuestions, setImportantQuestions] = useState([]);
+    const [loadingImportantQuestions, setLoadingImportantQuestions] = useState(false);
+    const [showCreateImportantQuestion, setShowCreateImportantQuestion] = useState(false);
+    const [newImportantQuestion, setNewImportantQuestion] = useState({ title: '', link: '' });
 
     // Create Mock State
     const [showCreate, setShowCreate] = useState(false);
@@ -47,7 +51,8 @@ const AdminPanel = () => {
         if (activeTab === 'mocks' && !showCreate) fetchMocks();
         if (activeTab === 'users') fetchUsers();
         if (activeTab === 'folders' || showCreate) fetchCategories();
-    }, [activeTab, showCreate]);
+        if (activeTab === 'important-questions' && !showCreateImportantQuestion) fetchImportantQuestions();
+    }, [activeTab, showCreate, showCreateImportantQuestion]);
 
     const fetchMocks = async () => {
         setLoadingMocks(true);
@@ -89,6 +94,56 @@ const AdminPanel = () => {
         } finally {
             setLoadingCategories(false);
         }
+    };
+
+    const fetchImportantQuestions = async () => {
+        setLoadingImportantQuestions(true);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/important-questions`);
+            if (res.ok) {
+                setImportantQuestions(await res.json());
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingImportantQuestions(false);
+        }
+    };
+
+    const handleSaveImportantQuestion = async () => {
+        if (!newImportantQuestion.title || !newImportantQuestion.link) return alert('Title and Link are required');
+        try {
+            const url = newImportantQuestion._id
+                ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/important-questions/admin/${newImportantQuestion._id}`
+                : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/important-questions/admin`;
+            const method = newImportantQuestion._id ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newImportantQuestion)
+            });
+
+            if (res.ok) {
+                setShowCreateImportantQuestion(false);
+                setNewImportantQuestion({ title: '', link: '' });
+                fetchImportantQuestions();
+            } else {
+                alert('Failed to save important question');
+            }
+        } catch (err) {
+            alert('Server error saving important question');
+        }
+    };
+
+    const deleteImportantQuestion = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this link?')) return;
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/important-questions/admin/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setImportantQuestions(importantQuestions.filter(q => q._id !== id));
+            }
+        } catch (err) { }
     };
 
     const handleSaveCategory = async () => {
@@ -251,6 +306,13 @@ const AdminPanel = () => {
                         <FolderTree className="mr-3 h-5 w-5" />
                         Manage Folders
                     </button>
+                    <button
+                        onClick={() => { setActiveTab('important-questions'); setShowCreate(false); setShowCreateImportantQuestion(false); }}
+                        className={`md:w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'important-questions' ? 'bg-blue-50 text-action-blue' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <LinkIcon className="mr-3 h-5 w-5" />
+                        Important Questions
+                    </button>
                 </nav>
             </div>
 
@@ -379,64 +441,106 @@ const AdminPanel = () => {
                         </div>
                     )}
 
-                    {/* View: Create Category Form */}
-                    {activeTab === 'folders' && showCreateCategory && (
+                    {/* View: Important Questions List */}
+                    {activeTab === 'important-questions' && !showCreateImportantQuestion && (
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-center gap-4">
+                                <h1 className="text-2xl font-bold text-gray-900">Manage Important Questions</h1>
+                                <button
+                                    onClick={() => {
+                                        setNewImportantQuestion({ title: '', link: '' });
+                                        setShowCreateImportantQuestion(true);
+                                    }}
+                                    className="flex items-center px-4 py-2 bg-action-blue text-white rounded-lg text-sm font-medium hover:bg-action-blue-hover transition-colors"
+                                >
+                                    <Plus className="mr-2 h-4 w-4" /> Add Link
+                                </button>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                {loadingImportantQuestions ? (
+                                    <div className="p-12 flex justify-center"><Loader2 className="animate-spin h-8 w-8 text-gray-400" /></div>
+                                ) : importantQuestions.length === 0 ? (
+                                    <div className="p-12 text-center text-gray-500">No important questions added yet.</div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {importantQuestions.map((q) => (
+                                                    <tr key={q._id} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{q.title}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-500 underline truncate max-w-md">
+                                                            <a href={q.link} target="_blank" rel="noopener noreferrer">{q.link}</a>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-4">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setNewImportantQuestion({ ...q });
+                                                                    setShowCreateImportantQuestion(true);
+                                                                }}
+                                                                className="text-blue-600 hover:text-blue-900 transition-colors"
+                                                            ><Edit2 className="h-4 w-4 inline" /></button>
+                                                            <button onClick={() => deleteImportantQuestion(q._id)} className="text-red-600 hover:text-red-900 transition-colors"><Trash2 className="h-4 w-4 inline" /></button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* View: Create Important Question Form */}
+                    {activeTab === 'important-questions' && showCreateImportantQuestion && (
                         <div className="space-y-6">
                             <div className="flex items-center space-x-4">
                                 <button
-                                    onClick={() => setShowCreateCategory(false)}
+                                    onClick={() => setShowCreateImportantQuestion(false)}
                                     className="p-2 rounded-full hover:bg-gray-200 text-gray-600 transition-colors"
                                 >
                                     <ArrowLeft className="h-5 w-5" />
                                 </button>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-gray-900">{newCategory._id ? 'Edit Folder' : 'Create New Folder'}</h1>
+                                    <h1 className="text-2xl font-bold text-gray-900">{newImportantQuestion._id ? 'Edit Link' : 'Add New Link'}</h1>
                                 </div>
                             </div>
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 max-w-xl">
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-gray-700">Folder Name</label>
+                                    <label className="text-sm font-medium text-gray-700">Display Name</label>
                                     <input
                                         type="text"
-                                        value={newCategory.name}
-                                        onChange={e => setNewCategory({ ...newCategory, name: e.target.value })}
+                                        value={newImportantQuestion.title}
+                                        onChange={e => setNewImportantQuestion({ ...newImportantQuestion, title: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
-                                        placeholder="e.g. JAIIB Exam 2026"
+                                        placeholder="e.g. JAIIB Important Questions Vol 1"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-gray-700">Folder Level</label>
-                                    <select
-                                        value={newCategory.type}
-                                        onChange={e => setNewCategory({ ...newCategory, type: e.target.value, parentId: e.target.value === 'Main' ? '' : newCategory.parentId })}
+                                    <label className="text-sm font-medium text-gray-700">Google Drive Link</label>
+                                    <input
+                                        type="url"
+                                        value={newImportantQuestion.link}
+                                        onChange={e => setNewImportantQuestion({ ...newImportantQuestion, link: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
-                                    >
-                                        <option value="Main">Main Folder</option>
-                                        <option value="Sub">Sub Folder</option>
-                                    </select>
+                                        placeholder="https://drive.google.com/file/d/..."
+                                    />
                                 </div>
-                                {newCategory.type === 'Sub' && (
-                                    <div className="space-y-1">
-                                        <label className="text-sm font-medium text-gray-700">Parent Main Folder</label>
-                                        <select
-                                            value={newCategory.parentId}
-                                            onChange={e => setNewCategory({ ...newCategory, parentId: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
-                                        >
-                                            <option value="">Select Parent Folder</option>
-                                            {categories.filter(c => c.type === 'Main').map(c => (
-                                                <option key={c._id} value={c._id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
                                 <button
-                                    onClick={handleSaveCategory}
-                                    disabled={!newCategory.name || (newCategory.type === 'Sub' && !newCategory.parentId)}
+                                    onClick={handleSaveImportantQuestion}
+                                    disabled={!newImportantQuestion.title || !newImportantQuestion.link}
                                     className="w-full mt-4 flex justify-center items-center py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm transition-colors disabled:opacity-50"
                                 >
                                     <CheckCircle className="h-5 w-5 mr-2" />
-                                    {newCategory._id ? 'Update Folder' : 'Save Folder'}
+                                    {newImportantQuestion._id ? 'Update Link' : 'Save Link'}
                                 </button>
                             </div>
                         </div>

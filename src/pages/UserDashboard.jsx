@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { PlayCircle, Clock, CheckCircle, AlertCircle, Folder, ChevronRight, ArrowLeft } from 'lucide-react';
+import { PlayCircle, Clock, CheckCircle, AlertCircle, Folder, ChevronRight, ArrowLeft, Link as LinkIcon, FileText } from 'lucide-react';
 
 const Dashboard = () => {
     const [mocks, setMocks] = useState([]);
@@ -11,12 +11,14 @@ const Dashboard = () => {
     // Navigation State
     const [selectedCategoryId, setSelectedCategoryId] = useState(null);
     const [selectedSubCategoryId, setSelectedSubCategoryId] = useState(null);
+    const [showImportantQuestions, setShowImportantQuestions] = useState(false);
+    const [importantQuestions, setImportantQuestions] = useState([]);
 
     const { user } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-        Promise.all([fetchMocks(), fetchCategories()]).finally(() => setLoading(false));
+        Promise.all([fetchMocks(), fetchCategories(), fetchImportantQuestions()]).finally(() => setLoading(false));
     }, []);
 
     const fetchMocks = async () => {
@@ -34,6 +36,15 @@ const Dashboard = () => {
             if (res.ok) setCategories(await res.json());
         } catch (err) {
             console.error('Failed to fetch categories:', err);
+        }
+    };
+
+    const fetchImportantQuestions = async () => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/important-questions`);
+            if (res.ok) setImportantQuestions(await res.json());
+        } catch (err) {
+            console.error('Failed to fetch important questions:', err);
         }
     };
 
@@ -67,7 +78,9 @@ const Dashboard = () => {
         : mocks.filter(m => !m.category); // Show uncategorized if at root
 
     const handleBack = () => {
-        if (selectedSubCategoryId) {
+        if (showImportantQuestions) {
+            setShowImportantQuestions(false);
+        } else if (selectedSubCategoryId) {
             setSelectedSubCategoryId(null);
         } else if (selectedCategoryId) {
             setSelectedCategoryId(null);
@@ -92,8 +105,8 @@ const Dashboard = () => {
                     )}
 
                     <span
-                        className={`cursor-pointer ${!selectedCategoryId ? 'font-bold text-gray-900' : 'hover:text-action-blue'}`}
-                        onClick={() => { setSelectedCategoryId(null); setSelectedSubCategoryId(null); }}
+                        className={`cursor-pointer ${(!selectedCategoryId && !showImportantQuestions) ? 'font-bold text-gray-900' : 'hover:text-action-blue'}`}
+                        onClick={() => { setSelectedCategoryId(null); setSelectedSubCategoryId(null); setShowImportantQuestions(false); }}
                     >
                         Home
                     </span>
@@ -118,20 +131,32 @@ const Dashboard = () => {
                             </span>
                         </>
                     )}
+
+                    {showImportantQuestions && (
+                        <>
+                            <ChevronRight className="h-4 w-4 mx-2" />
+                            <span className="font-bold text-gray-900">
+                                Important Questions
+                            </span>
+                        </>
+                    )}
                 </div>
 
                 <h2 className="text-2xl font-bold text-gray-900">
-                    {!selectedCategoryId ? 'Exam Categories'
-                        : !selectedSubCategoryId ? `${currentMainFolder?.name} Subcategories`
-                            : `${currentSubFolder?.name} Tests`}
+                    {!selectedCategoryId && !showImportantQuestions ? 'Exam Categories'
+                        : showImportantQuestions ? 'Most Important Questions JAIIB/DBF 2026'
+                            : !selectedSubCategoryId ? `${currentMainFolder?.name} Subcategories`
+                                : `${currentSubFolder?.name} Tests`}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
-                    {!selectedCategoryId ? 'Select an exam category to browse available mock tests.' : 'Select a test below to enter Focus Mode and begin.'}
+                    {!selectedCategoryId && !showImportantQuestions ? 'Select an exam category to browse available mock tests.'
+                        : showImportantQuestions ? 'Click on the titles below to view the linked PDF files.'
+                            : 'Select a test below to enter Focus Mode and begin.'}
                 </p>
             </div>
 
             {/* Folder Grid View */}
-            {!selectedSubCategoryId && (
+            {!selectedSubCategoryId && !showImportantQuestions && (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8">
                     {!selectedCategoryId && mainFolders.map(folder => (
                         <div
@@ -148,6 +173,21 @@ const Dashboard = () => {
                             </div>
                         </div>
                     ))}
+
+                    {!selectedCategoryId && (
+                        <div
+                            onClick={() => setShowImportantQuestions(true)}
+                            className="bg-white p-6 rounded-xl border border-gray-200 hover:border-action-blue hover:shadow-md transition-all duration-200 cursor-pointer flex items-center shadow-sm group"
+                        >
+                            <div className="h-12 w-12 rounded-lg bg-yellow-50 flex items-center justify-center mr-4 group-hover:bg-yellow-500 group-hover:text-white transition-colors text-yellow-600">
+                                <LinkIcon className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 group-hover:text-yellow-600 transition-colors line-clamp-2">Most Important Questions JAIIB/DBF 2026</h3>
+                                <p className="text-xs text-gray-500 mt-1">{importantQuestions.length} Links</p>
+                            </div>
+                        </div>
+                    )}
 
                     {selectedCategoryId && !selectedSubCategoryId && subFolders.map(folder => (
                         <div
@@ -167,8 +207,39 @@ const Dashboard = () => {
                 </div>
             )}
 
+            {/* Important Questions Detail View */}
+            {showImportantQuestions && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+                    {importantQuestions.length === 0 ? (
+                        <div className="col-span-full text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
+                            <LinkIcon className="mx-auto h-12 w-12 text-gray-300" />
+                            <h3 className="mt-2 text-sm font-medium text-gray-900">No questions added yet</h3>
+                            <p className="mt-1 text-sm text-gray-500">Check back later for important study material.</p>
+                        </div>
+                    ) : (
+                        importantQuestions.map(q => (
+                            <a
+                                key={q._id}
+                                href={q.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-white p-4 rounded-xl border border-gray-200 hover:border-action-blue hover:shadow-md transition-all duration-200 flex items-center shadow-sm group"
+                            >
+                                <div className="h-10 w-10 rounded-lg bg-red-50 flex items-center justify-center mr-3 group-hover:bg-red-600 group-hover:text-white transition-colors text-red-600">
+                                    <FileText className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-action-blue transition-colors line-clamp-2">{q.title}</h3>
+                                    <p className="text-xs text-gray-400 mt-0.5">Click to view PDF</p>
+                                </div>
+                            </a>
+                        ))
+                    )}
+                </div>
+            )}
+
             {/* Empty States for Folders */}
-            {!selectedCategoryId && mainFolders.length === 0 && displayedMocks.length === 0 && (
+            {!selectedCategoryId && !showImportantQuestions && mainFolders.length === 0 && displayedMocks.length === 0 && (
                 <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
                     <Folder className="mx-auto h-12 w-12 text-gray-300" />
                     <h3 className="mt-2 text-sm font-medium text-gray-900">No content available</h3>
@@ -185,7 +256,7 @@ const Dashboard = () => {
             )}
 
             {/* Mocks Grid View */}
-            {(selectedSubCategoryId || (!selectedCategoryId && displayedMocks.length > 0)) && (
+            {!showImportantQuestions && (selectedSubCategoryId || (!selectedCategoryId && displayedMocks.length > 0)) && (
                 <>
                     {displayedMocks.length === 0 ? (
                         <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
