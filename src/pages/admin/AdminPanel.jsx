@@ -47,6 +47,8 @@ const AdminPanel = () => {
         negativeMarks: ''
     });
 
+    const [editingQuestionIndex, setEditingQuestionIndex] = useState(null);
+
     useEffect(() => {
         if (activeTab === 'mocks' && !showCreate) fetchMocks();
         if (activeTab === 'users') fetchUsers();
@@ -202,12 +204,17 @@ const AdminPanel = () => {
         if (questionToAdd.positiveMarks === '') delete questionToAdd.positiveMarks;
         if (questionToAdd.negativeMarks === '') delete questionToAdd.negativeMarks;
 
-        setNewMock(prev => ({
-            ...prev,
-            questions: [...prev.questions, questionToAdd]
-        }));
+        setNewMock(prev => {
+            const updatedQuestions = [...prev.questions];
+            if (editingQuestionIndex !== null) {
+                updatedQuestions[editingQuestionIndex] = questionToAdd;
+            } else {
+                updatedQuestions.push(questionToAdd);
+            }
+            return { ...prev, questions: updatedQuestions };
+        });
 
-        // Reset question form
+        // Reset question form and editing state
         setNewQuestion({
             text: '',
             options: ['', '', '', ''],
@@ -216,6 +223,35 @@ const AdminPanel = () => {
             positiveMarks: '',
             negativeMarks: ''
         });
+        setEditingQuestionIndex(null);
+    };
+
+    const handleEditQuestion = (index) => {
+        const questionToEdit = newMock.questions[index];
+        setNewQuestion({
+            text: questionToEdit.text,
+            options: [...questionToEdit.options],
+            correctOptionIndex: questionToEdit.correctOptionIndex,
+            explanation: questionToEdit.explanation || '',
+            positiveMarks: questionToEdit.positiveMarks || '',
+            negativeMarks: questionToEdit.negativeMarks || ''
+        });
+        setEditingQuestionIndex(index);
+        // Scroll to the question form
+        const element = document.getElementById('question-form');
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const handleCancelEdit = () => {
+        setNewQuestion({
+            text: '',
+            options: ['', '', '', ''],
+            correctOptionIndex: 0,
+            explanation: '',
+            positiveMarks: '',
+            negativeMarks: ''
+        });
+        setEditingQuestionIndex(null);
     };
 
     const handleRemoveQuestion = (index) => {
@@ -773,8 +809,11 @@ const AdminPanel = () => {
                                         </div>
 
                                         {/* New Question Form */}
-                                        <div className="bg-blue-50 p-5 rounded-lg border border-blue-100 space-y-4">
-                                            <h4 className="text-sm font-bold text-action-blue flex items-center"><Plus className="h-4 w-4 mr-1" /> Add New Question</h4>
+                                        <div id="question-form" className="bg-blue-50 p-5 rounded-lg border border-blue-100 space-y-4">
+                                            <h4 className="text-sm font-bold text-action-blue flex items-center">
+                                                {editingQuestionIndex !== null ? <Edit2 className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                                                {editingQuestionIndex !== null ? `Editing Question #${editingQuestionIndex + 1}` : 'Add New Question'}
+                                            </h4>
 
                                             <textarea
                                                 value={newQuestion.text}
@@ -843,24 +882,44 @@ const AdminPanel = () => {
                                                 </div>
                                             </div>
 
-                                            <button
-                                                onClick={handleAddQuestion}
-                                                className="w-full py-2 bg-white border border-action-blue text-action-blue font-medium rounded-lg text-sm hover:bg-blue-100 transition-colors"
-                                            >
-                                                Save Question to Bank
-                                            </button>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={handleAddQuestion}
+                                                    className="flex-1 py-2 bg-white border border-action-blue text-action-blue font-medium rounded-lg text-sm hover:bg-blue-100 transition-colors"
+                                                >
+                                                    {editingQuestionIndex !== null ? 'Update Question' : 'Save Question to Bank'}
+                                                </button>
+                                                {editingQuestionIndex !== null && (
+                                                    <button
+                                                        onClick={handleCancelEdit}
+                                                        className="px-4 py-2 bg-gray-100 border border-gray-300 text-gray-600 font-medium rounded-lg text-sm hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        Cancel Edit
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Render Added Questions */}
                                         <div className="space-y-3">
                                             {newMock.questions.map((q, idx) => (
                                                 <div key={idx} className="p-4 border border-gray-200 rounded-lg relative group bg-white hover:border-gray-300 transition-colors">
-                                                    <button
-                                                        onClick={() => handleRemoveQuestion(idx)}
-                                                        className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
+                                                    <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-colors">
+                                                        <button
+                                                            onClick={() => handleEditQuestion(idx)}
+                                                            className="p-1.5 text-blue-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
+                                                            title="Edit question"
+                                                        >
+                                                            <Edit2 className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRemoveQuestion(idx)}
+                                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                                            title="Remove question"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
                                                     <p className="text-sm font-medium text-gray-900 pr-8 mb-3"><span className="text-gray-400 mr-1">{idx + 1}.</span>{q.text}</p>
                                                     <div className="grid grid-cols-2 gap-2">
                                                         {q.options.map((opt, optIdx) => (
