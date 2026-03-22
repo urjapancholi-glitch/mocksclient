@@ -24,7 +24,11 @@ const Dashboard = () => {
     const fetchMocks = async () => {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/mock`);
-            if (res.ok) setMocks(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                const sorted = data.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' }));
+                setMocks(sorted);
+            }
         } catch (err) {
             console.error('Failed to fetch mocks:', err);
         }
@@ -33,7 +37,11 @@ const Dashboard = () => {
     const fetchCategories = async () => {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/categories`);
-            if (res.ok) setCategories(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                const sorted = data.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
+                setCategories(sorted);
+            }
         } catch (err) {
             console.error('Failed to fetch categories:', err);
         }
@@ -42,7 +50,11 @@ const Dashboard = () => {
     const fetchImportantQuestions = async () => {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/important-questions`);
-            if (res.ok) setImportantQuestions(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                const sorted = data.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' }));
+                setImportantQuestions(sorted);
+            }
         } catch (err) {
             console.error('Failed to fetch important questions:', err);
         }

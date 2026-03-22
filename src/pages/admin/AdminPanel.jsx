@@ -52,7 +52,7 @@ const AdminPanel = () => {
     useEffect(() => {
         if (activeTab === 'mocks' && !showCreate) fetchMocks();
         if (activeTab === 'users') fetchUsers();
-        if (activeTab === 'folders' || showCreate) fetchCategories();
+        if (activeTab === 'folders' || activeTab === 'mocks' || showCreate) fetchCategories();
         if (activeTab === 'important-questions' && !showCreateImportantQuestion) fetchImportantQuestions();
     }, [activeTab, showCreate, showCreateImportantQuestion]);
 
@@ -61,7 +61,9 @@ const AdminPanel = () => {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/mock/admin`);
             if (res.ok) {
-                setMocks(await res.json());
+                const data = await res.json();
+                const sorted = data.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' }));
+                setMocks(sorted);
             }
         } catch (err) {
             console.error(err);
@@ -89,7 +91,9 @@ const AdminPanel = () => {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/categories`);
             if (res.ok) {
-                setCategories(await res.json());
+                const data = await res.json();
+                const sorted = data.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
+                setCategories(sorted);
             }
         } catch (err) {
             console.error(err);
@@ -103,7 +107,9 @@ const AdminPanel = () => {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/important-questions`);
             if (res.ok) {
-                setImportantQuestions(await res.json());
+                const data = await res.json();
+                const sorted = data.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' }));
+                setImportantQuestions(sorted);
             }
         } catch (err) {
             console.error(err);
@@ -310,6 +316,13 @@ const AdminPanel = () => {
         } finally {
             setCreating(false);
         }
+    };
+
+    const getFolderName = (mock) => {
+        if (!mock.subCategory && !mock.category) return 'Uncategorized';
+        const targetId = mock.subCategory || mock.category;
+        const cat = categories.find(c => c._id === targetId);
+        return cat ? cat.name : 'Unknown Folder';
     };
 
     return (
@@ -628,8 +641,9 @@ const AdminPanel = () => {
                                             <tbody className="bg-white divide-y divide-gray-200">
                                                 {mocks.map((mock) => (
                                                     <tr key={mock._id} className="hover:bg-gray-50 transition-colors">
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{mock.title}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{mock.questions?.length || 0}</td>
+                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{mock.title}</td>
+                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-xs italic">{getFolderName(mock)}</td>
+                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{mock.questions?.length || 0}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{mock.durationMinutes}m</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">+{mock.positiveMarks} / -{mock.negativeMarks}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-4">
