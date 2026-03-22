@@ -490,6 +490,69 @@ const AdminPanel = () => {
                         </div>
                     )}
 
+                    {/* View: Create/Edit Category Form */}
+                    {activeTab === 'folders' && showCreateCategory && (
+                        <div className="space-y-6">
+                            <div className="flex items-center space-x-4">
+                                <button
+                                    onClick={() => setShowCreateCategory(false)}
+                                    className="p-2 rounded-full hover:bg-gray-200 text-gray-600 transition-colors"
+                                >
+                                    <ArrowLeft className="h-5 w-5" />
+                                </button>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900">{newCategory._id ? 'Edit Folder' : 'Add New Folder'}</h1>
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 max-w-xl">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">Folder Name</label>
+                                    <input
+                                        type="text"
+                                        value={newCategory.name}
+                                        onChange={e => setNewCategory({ ...newCategory, name: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
+                                        placeholder="e.g. Quantitative Aptitude"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">Type</label>
+                                    <select
+                                        value={newCategory.type}
+                                        onChange={e => setNewCategory({ ...newCategory, type: e.target.value, parentId: e.target.value === 'Main' ? '' : newCategory.parentId })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
+                                    >
+                                        <option value="Main">Main Folder</option>
+                                        <option value="Sub">Sub Folder</option>
+                                    </select>
+                                </div>
+                                {newCategory.type === 'Sub' && (
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-medium text-gray-700">Parent Main Folder</label>
+                                        <select
+                                            value={newCategory.parentId}
+                                            onChange={e => setNewCategory({ ...newCategory, parentId: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-action-blue focus:border-action-blue outline-none text-sm"
+                                        >
+                                            <option value="">Select Parent</option>
+                                            {categories.filter(c => c.type === 'Main' && c._id !== newCategory._id).map(c => (
+                                                <option key={c._id} value={c._id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                <button
+                                    onClick={handleSaveCategory}
+                                    disabled={!newCategory.name || (newCategory.type === 'Sub' && !newCategory.parentId)}
+                                    className="w-full mt-4 flex justify-center items-center py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm transition-colors disabled:opacity-50"
+                                >
+                                    <CheckCircle className="h-5 w-5 mr-2" />
+                                    {newCategory._id ? 'Update Folder' : 'Save Folder'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* View: Important Questions List */}
                     {activeTab === 'important-questions' && !showCreateImportantQuestion && (
                         <div className="space-y-6">
